@@ -147,6 +147,9 @@ function App() {
   return (
     <div className="App">
       <header className="App-header-minimal">
+        <div className="ttt-title-container">
+          <h1 className="ttt-title" data-testid="ttt-title">Tic Tac Toe</h1>
+        </div>
         <div className="controls-bar">
           <PlayerChoice
             onChoose={handleChooseSide}
