@@ -24,6 +24,39 @@ function calculateWinner(squares) {
   return null;
 }
 
+// Utility function: finds all empty indices
+function getAvailableMoves(squares) {
+  return squares
+    .map((val, idx) => (val === null ? idx : null))
+    .filter((idx) => idx !== null);
+}
+
+// Bare minimum AI: Try to win, then block, else random.
+// For Tic-Tac-Toe, minimax is overkill, rule-based + fallback to random is enough.
+function computeAIMove(squares, aiMark, humanMark) {
+  const avail = getAvailableMoves(squares);
+
+  // Helper: place mark on new board, check for win
+  const tryMoveFor = (board, mark) =>
+    avail.find(idx => {
+      const copy = board.slice();
+      copy[idx] = mark;
+      const result = calculateWinner(copy);
+      return result && result.winner === mark;
+    });
+
+  // 1. Win if possible
+  const winningMove = tryMoveFor(squares, aiMark);
+  if (winningMove !== undefined) return winningMove;
+  // 2. Block if human can win
+  const blockMove = tryMoveFor(squares, humanMark);
+  if (blockMove !== undefined) return blockMove;
+  // 3. Take center if available
+  if (squares[4] === null) return 4;
+  // 4. Take random
+  return avail[Math.floor(Math.random() * avail.length)];
+}
+
 // PUBLIC_INTERFACE
 function TicTacToeBoard({ squares, onSquareClick, disabled, winLine }) {
   return (
@@ -69,27 +102,32 @@ function PlayerChoice({ onChoose, current, disabled }) {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * App Root - Enhanced for Human vs Human or Human vs AI
+ */
 function App() {
   const [theme, setTheme] = useState('light');
   const [squares, setSquares] = useState(Array(9).fill(null));
   const [isX, setIsX] = useState(true); // true: X, false: O
-  const [playerSide, setPlayerSide] = useState('X');
+  const [playerSide, setPlayerSide] = useState('X'); // User's symbol
   const [status, setStatus] = useState('');
   const [gameOver, setGameOver] = useState(false);
   const [winLine, setWinLine] = useState(null);
+  const [gameMode, setGameMode] = useState('human'); // 'human' | 'ai'
+  // If vs AI: track whether it's AI's turn; User always plays as 'playerSide'; AI is the other
+  const [aiThinking, setAiThinking] = useState(false);
 
   // Apply the theme to the document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Evaluate game state after every move
+  // Evaluate game state after every move (status, winner, draw)
   useEffect(() => {
     const result = calculateWinner(squares);
     if (result) {
       if (result.winner) {
-        setStatus(`Winner: ${result.winner}`);
+        setStatus(`Winner: ${result.winner}${gameMode === 'ai' ? (result.winner === playerSide ? ' (You)' : ' (AI)') : ''}`);
         setGameOver(true);
         setWinLine(result.line);
       } else if (result.draw) {
@@ -97,10 +135,47 @@ function App() {
         setGameOver(true);
         setWinLine(null);
       }
+      setAiThinking(false); // Defensive: clear thinking after end
     } else {
-      setStatus(`Turn: ${isX ? 'X' : 'O'}`);
+      if (gameMode === 'ai') {
+        const whoseTurnIs = isX ? 'X' : 'O';
+        if (whoseTurnIs === playerSide) {
+          setStatus(`Your turn (${playerSide})`);
+          setAiThinking(false);
+        } else {
+          setStatus("AI's turn...");
+        }
+      } else {
+        setStatus(`Turn: ${isX ? 'X' : 'O'}`);
+      }
     }
-  }, [squares, isX]);
+  }, [squares, isX, gameMode, playerSide]);
+
+  // AI move effect: When in AI mode and it's AI's turn, trigger AI move after short delay
+  useEffect(() => {
+    if (gameOver || gameMode !== 'ai') {
+      setAiThinking(false); // Defensive
+      return;
+    }
+    const aiMark = playerSide === 'X' ? 'O' : 'X';
+    const isAITurn = (isX && aiMark === 'X') || (!isX && aiMark === 'O');
+    if (isAITurn) {
+      setAiThinking(true);
+      // Short delay to look "human"
+      const moveTimeout = setTimeout(() => {
+        const idx = computeAIMove(squares, aiMark, playerSide);
+        if (typeof idx === 'number') {
+          const next = squares.slice();
+          next[idx] = aiMark;
+          setSquares(next);
+          setIsX(x => !x);
+        }
+        setAiThinking(false);
+      }, 500);
+      return () => clearTimeout(moveTimeout);
+    }
+    setAiThinking(false);
+  }, [squares, isX, gameMode, gameOver, playerSide]);
 
   // PUBLIC_INTERFACE
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
@@ -108,6 +183,11 @@ function App() {
   // PUBLIC_INTERFACE
   const handleSquareClick = (idx) => {
     if (squares[idx] || gameOver) return;
+    // Human-vs-human: allow both turns; vs-AI: only allow human's turn
+    if (gameMode === 'ai') {
+      const playerTurn = (isX && playerSide === 'X') || (!isX && playerSide === 'O');
+      if (!playerTurn || aiThinking) return;
+    }
     const next = squares.slice();
     next[idx] = isX ? 'X' : 'O';
     setSquares(next);
@@ -119,7 +199,11 @@ function App() {
     setSquares(Array(9).fill(null));
     setIsX(playerSide === 'X');
     setGameOver(false);
-    setStatus(`Turn: ${playerSide}`);
+    if (gameMode === 'ai') setAiThinking(false);
+    setStatus(gameMode === 'ai'
+      ? (playerSide === 'X' ? 'Your turn (X)' : "AI's turn...")
+      : `Turn: ${playerSide}`
+    );
     setWinLine(null);
   };
 
@@ -129,7 +213,25 @@ function App() {
     setIsX(side === 'X');
     setSquares(Array(9).fill(null));
     setGameOver(false);
-    setStatus(`Turn: ${side}`);
+    if (gameMode === 'ai') setAiThinking(side !== 'X'); // if O: AI first
+    setStatus(gameMode === 'ai'
+      ? (side === 'X' ? 'Your turn (X)' : "AI's turn...")
+      : `Turn: ${side}`
+    );
+    setWinLine(null);
+  };
+
+  // PUBLIC_INTERFACE
+  const handleModeChange = (mode) => {
+    setGameMode(mode);
+    setSquares(Array(9).fill(null));
+    setIsX(playerSide === 'X');
+    setGameOver(false);
+    setAiThinking(mode === 'ai' && playerSide !== 'X'); // if AI goes first
+    setStatus(mode === 'ai'
+      ? (playerSide === 'X' ? 'Your turn (X)' : "AI's turn…")
+      : `Turn: ${playerSide}`
+    );
     setWinLine(null);
   };
 
@@ -151,6 +253,26 @@ function App() {
           <h1 className="ttt-title" data-testid="ttt-title">Tic Tac Toe</h1>
         </div>
         <div className="controls-bar">
+          {/* Mode selector */}
+          <div className="player-choice" style={{marginRight: 14}}>
+            <span className="label">Play vs:</span>
+            <button
+              className={`choice-btn${gameMode === 'human' ? ' active' : ''}`}
+              onClick={() => handleModeChange('human')}
+              disabled={squares.some(Boolean) && !gameOver}
+              aria-pressed={gameMode === 'human'}
+            >
+              Human
+            </button>
+            <button
+              className={`choice-btn${gameMode === 'ai' ? ' active' : ''}`}
+              onClick={() => handleModeChange('ai')}
+              disabled={squares.some(Boolean) && !gameOver}
+              aria-pressed={gameMode === 'ai'}
+            >
+              AI
+            </button>
+          </div>
           <PlayerChoice
             onChoose={handleChooseSide}
             current={playerSide}
@@ -174,16 +296,20 @@ function App() {
             {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
           </button>
         </div>
-
         <main className="ttt-main">
           <TicTacToeBoard
             squares={squares}
             onSquareClick={handleSquareClick}
-            disabled={gameOver}
+            disabled={gameOver || (gameMode === 'ai' && ((isX && playerSide !== 'X') || (!isX && playerSide !== 'O')) && !gameOver)}
             winLine={winLine}
           />
-          <div className="status-message">
+          <div className="status-message" data-testid="status-message" aria-live="polite">
             {status}
+            {gameMode === 'ai' && !gameOver &&
+              <span style={{fontSize: '0.96em', display: 'block', color: '#656d78', marginTop: 2}}>
+                (You: {playerSide}, AI: {playerSide === 'X' ? 'O' : 'X'})
+              </span>
+            }
           </div>
         </main>
       </header>
