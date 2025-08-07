@@ -1,0 +1,205 @@
+/* ===== Theme variables ===== */
+:root {
+  --primary: #1976d2;
+  --secondary: #424242;
+  --accent: #ff4081;
+  --bg-primary: #fff;
+  --bg-secondary: #f8f9fa;
+  --ttt-board-bg: #f3f6fa;
+  --ttt-border: #e9ecef;
+  --text-primary: #262831;
+  --text-secondary: #656d78;
+  --status-win: var(--accent);
+  --status-draw: #868686;
+  --btn-bg: var(--primary);
+  --btn-fg: #fff;
+  --btn-active: #1557a6;
+  --choice-active: var(--accent);
+  --square-bg: #fff;
+  --square-win: var(--accent);
+}
+[data-theme="dark"] {
+  --bg-primary: #202024;
+  --bg-secondary: #23272f;
+  --ttt-board-bg: #252930;
+  --ttt-border: #333742;
+  --text-primary: #f7f7fa;
+  --text-secondary: #9ea5b5;
+  --btn-bg: var(--secondary);
+  --btn-active: #30334b;
+  --choice-active: var(--primary);
+  --square-bg: #23272f;
+  --square-win: var(--accent);
+  --status-win: var(--accent);
+  --status-draw: #bdbdbd;
+}
+
+/* ===== App layout ===== */
+body, .App {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Segoe UI', Arial, Helvetica, sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+
+.App-header-minimal {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  background: var(--bg-primary);
+  padding: 0;
+  position: relative;
+}
+
+.controls-bar {
+  width: 100vw;
+  max-width: 430px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto;
+  padding: 36px 0 10px 0;
+  background: none;
+  position: relative;
+}
+.icon-btn, .choice-btn {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 6px 0 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px 0 rgba(31,34,61,0.07);
+  user-select: none;
+}
+.icon-btn[disabled], .choice-btn[disabled] {
+  opacity: 0.38;
+  pointer-events: none;
+}
+.icon-btn:hover, .choice-btn:hover, .choice-btn.active {
+  background: var(--choice-active);
+  color: #fff;
+}
+.choice-btn.active {
+  background: var(--choice-active);
+}
+.player-choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.player-choice .label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-right: 6px;
+}
+
+/* ====== Main game board ====== */
+.ttt-main {
+  width: 100vw;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 75px);
+  grid-template-rows: repeat(3, 75px);
+  gap: 8px;
+  background: var(--ttt-board-bg);
+  border-radius: 18px;
+  padding: 20px 16px 14px 16px;
+  border: 1.5px solid var(--ttt-border);
+  box-shadow: 0 6px 18px rgba(20,30,50,0.06);
+  margin: 18px 0 7px 0;
+  justify-content: center;
+  align-items: center;
+}
+.ttt-square {
+  width: 75px;
+  height: 75px;
+  background: var(--square-bg);
+  border: 2px solid var(--ttt-border);
+  border-radius: 13px;
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: border 0.17s, background 0.18s, color 0.14s;
+  box-shadow: 0 2.5px 12px rgba(40,40,60,0.035);
+  outline: none;
+  user-select: none;
+}
+.ttt-square:active {
+  background: var(--primary);
+  color: #fff;
+}
+.ttt-square[disabled] {
+  cursor: default;
+  opacity: 0.62;
+}
+.ttt-square.winner {
+  border: 2.5px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  animation: winner-pop 0.45s;
+}
+@keyframes winner-pop {
+  0% { transform: scale(1);    background: var(--accent); }
+  30% { transform: scale(1.2); }
+  55% { transform: scale(0.85);}
+  100% {transform: scale(1);}
+}
+
+/* ====== Status and info ====== */
+.status-message {
+  font-size: 1.21rem;
+  font-weight: 600;
+  min-height: 38px;
+  margin: 8px 0 0 0;
+  color: var(--primary);
+  text-align: center;
+  letter-spacing: 0.01em;
+  transition: color 0.22s;
+}
+.status-message:empty {
+  min-height: 38px;
+}
+.status-message:has(:contains('Winner')) {
+  color: var(--status-win);
+}
+
+/* ===== Responsiveness ===== */
+@media (max-width: 520px) {
+  .ttt-main { max-width: 99vw; }
+  .ttt-board {
+    grid-template-columns: repeat(3, 19vw);
+    grid-template-rows: repeat(3, 19vw);
+    min-width: unset;
+    padding: 8vw 2vw 12vw 2vw;
+  }
+  .ttt-square { font-size: 7vw; }
+  .controls-bar { font-size: 15px; }
+}
+@media (max-width: 380px) {
+  .ttt-board {
+    grid-template-columns: repeat(3, 24vw);
+    grid-template-rows: repeat(3, 24vw);
+    padding: 9vw 1vw 5vw 1vw;
+  }
+}
