@@ -55,6 +55,41 @@ body, .App {
   position: relative;
 }
 
+/* ===== Title Styles ===== */
+.ttt-title-container {
+  width: 100vw;
+  max-width: 430px;
+  display: flex;
+  justify-content: center;
+  padding-top: 40px;
+  margin-bottom: 12px;
+}
+
+.ttt-title {
+  font-size: 2.7rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 0.025em;
+  margin: 0 0 0.75em 0;
+  text-align: center;
+  background: none;
+  border: none;
+  line-height: 1.14;
+  font-family: inherit;
+  transition: color 0.23s;
+  user-select: none;
+}
+
+@media (max-width: 520px) {
+  .ttt-title-container {
+    padding-top: 17vw;
+    max-width: 99vw;
+  }
+  .ttt-title {
+    font-size: 7vw;
+  }
+}
+
 .controls-bar {
   width: 100vw;
   max-width: 430px;
